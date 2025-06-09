@@ -1,0 +1,30 @@
+# Użyj oficjalnego obrazu Python
+FROM python:3.10-slim
+
+# Ustaw katalog roboczy
+WORKDIR /usr/src/app
+
+# Skopiuj plik requirements i zainstaluj zależności
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt 
+
+# Skopiuj kod aplikacji interfejsu
+COPY ./app/interface /usr/src/app/interface
+COPY ./app/__init__.py /usr/src/app/__init__.py 
+# Jeśli interfejs potrzebuje innych części 'app', skopiuj je również
+
+# Ustaw zmienną środowiskową dla Flask
+ENV FLASK_APP=interface.app:create_app
+ENV FLASK_RUN_HOST=0.0.0.0
+# Usunięto ENV FLASK_ENV=development, będzie ustawiane w docker-compose
+
+# Uruchom aplikację Flask (dla deweloperki, w produkcji użyj Gunicorn)
+# CMD ["flask", "run"]
+# Dla produkcji z Gunicorn:
+EXPOSE 5000
+
+# Skrypt startowy, który wybiera między flask run a gunicorn
+COPY ./app/interface/entrypoint.sh /usr/src/app/entrypoint.sh
+RUN chmod +x /usr/src/app/entrypoint.sh
+
+CMD ["/usr/src/app/entrypoint.sh"]

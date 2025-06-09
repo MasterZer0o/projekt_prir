@@ -1,0 +1,20 @@
+# Użyj oficjalnego obrazu Python
+FROM python:3.10-slim
+
+# Ustaw katalog roboczy
+WORKDIR /usr/src/app
+
+# Skopiuj plik requirements i zainstaluj zależności
+COPY requirements.txt ./
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Skopiuj kod aplikacji silnika i bazy danych
+COPY ./app/scraper /usr/src/app/scraper
+COPY ./app/database /usr/src/app/database
+COPY ./app/__init__.py /usr/src/app/__init__.py
+
+# Utwórz katalog na dane, jeśli baza danych ma być w kontenerze
+# RUN mkdir -p /usr/src/app/data 
+# W docker-compose.yml można zdefiniować wolumen dla /usr/src/app/data
+
+CMD ["python", "-u", "-m", "scraper.engine"]

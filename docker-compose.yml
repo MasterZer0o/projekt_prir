@@ -1,0 +1,41 @@
+services:
+  interface:
+    build:
+      context: .
+      dockerfile: Dockerfile.interface
+    ports:
+      - '5000:5000'
+    volumes:
+      - ./app/interface:/usr/src/app/interface
+      - ./app/database:/usr/src/app/database 
+      - ./data:/usr/src/app/data  # <--- DODAJ TĘ LINIĘ, ABY WSPÓŁDZIELIĆ BAZĘ DANYCH
+    depends_on:
+      - engine
+    environment:
+      - FLASK_ENV=development
+      - DB_PATH=/usr/src/app/data/scraped_data.db # <--- DODAJ/UPEWNIJ SIĘ, ŻE JEST TA ZMIENNA
+      # - ENGINE_API_URL=http://engine:5001 
+    networks:
+      - app-network
+
+  engine:
+    build:
+      context: .
+      dockerfile: Dockerfile.engine
+    volumes:
+      - ./app/scraper:/usr/src/app/scraper
+      - ./app/database:/usr/src/app/database
+      - ./app/__init__.py:/usr/src/app/__init__.py 
+      - ./data:/usr/src/app/data 
+    ports:
+      - '5001:5001' 
+    networks:
+      - app-network
+    environment:
+      - DB_PATH=/usr/src/app/data/scraped_data.db
+
+networks:
+  app-network:
+    driver: bridge
+# volumes:
+# postgres_data: # Dla PostgreSQL

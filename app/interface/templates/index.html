@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="pl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Scraper Danych</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+    <style>
+      .pagination-controls button {
+        margin-left: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container mt-5">
+      <h1 class="mb-4">Scraper Danych</h1>
+      <div class="mb-3">
+        <button id="scrapeMoviesBtn" class="btn btn-primary mr-2">Filmy</button>
+        <button id="scrapeSeriesBtn" class="btn btn-info mr-3">Seriale</button>
+        <span class="pagination-controls">
+          <span>Strona:</span>
+          <button class="btn btn-secondary btn-sm page-btn" data-page="1">1</button>
+          <button class="btn btn-secondary btn-sm page-btn" data-page="2">2</button>
+          <button class="btn btn-secondary btn-sm page-btn" data-page="3">3</button>
+          <button class="btn btn-secondary btn-sm page-btn" data-page="4">4</button>
+          <button class="btn btn-secondary btn-sm page-btn" data-page="5">5</button>
+        </span>
+      </div>
+      <table id="dataTable" class="table mt-4">
+        <thead>
+          <tr>
+            <th>Tytuł</th>
+            <th>Opis</th>
+            <th>Link</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dane zostaną tutaj wstawione przez JavaScript -->
+        </tbody>
+      </table>
+    </div>
+
+    <script>
+      let currentScrapeType = 'filmy' // Domyślny typ danych
+      let currentPage = 1 // Domyślna strona
+
+      function loadInitialData(type, page = 1) {
+        currentScrapeType = type
+        currentPage = page
+        const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0]
+        tableBody.innerHTML = `<tr><td colspan="3">Ładowanie danych (${type}, strona ${page})...</td></tr>`
+
+        fetch(`/get_data?type=${type}&page=${page}`) // Dodajemy parametr page
+          .then(response => response.json())
+          .then(data => {
+            tableBody.innerHTML = ''
+            if (data.error) {
+              tableBody.innerHTML = `<tr><td colspan="3">Błąd: ${data.error}</td></tr>`
+            } else if (data.length === 0) {
+              tableBody.innerHTML = `<tr><td colspan="3">Brak danych '${type}' (strona ${page}) w bazie. Kliknij typ i numer strony, aby zeskrapować.</td></tr>`
+            } else {
+              renderTable(data, tableBody)
+            }
+          })
+          .catch(error => {
+            console.error(`Błąd podczas ładowania danych początkowych dla '${type}', strona ${page}:`, error)
+            tableBody.innerHTML = `<tr><td colspan="3">Wystąpił błąd podczas ładowania danych (${type}, strona ${page}).</td></tr>`
+          })
+      }
+
+      function fetchData(type, page) {
+        currentScrapeType = type
+        currentPage = page
+        const tableBody = document.getElementById('dataTable').getElementsByTagName('tbody')[0]
+        tableBody.innerHTML = `<tr><td colspan="3">Rozpoczynam scrapowanie (${type}, strona ${page})...</td></tr>`
+
+        fetch(`/start_scrape?type=${type}&page=${page}`, {
+          method: 'POST'
+        })
+          .then(response => response.json())
+          .then(data => {
+            tableBody.innerHTML = ''
+            if (data.error) {
+              tableBody.innerHTML = `<tr><td colspan="3">Błąd: ${data.error}</td></tr>`
+            } else if (data.data.length !== 0) {
+              renderTable(data.data, tableBody)
+            } else {
+              tableBody.innerHTML = `<tr><td colspan="3">Nie znaleziono żadnych danych (${type}, strona ${page}) podczas scrapowania.</td></tr>`
+            }
+          })
+          .catch(error => {
+            console.error(`Błąd podczas pobierania danych dla '${type}', strona ${page}:`, error)
+            tableBody.innerHTML = `<tr><td colspan="3">Wystąpił błąd podczas scrapowania danych (${type}, strona ${page}).</td></tr>`
+          })
+      }
+
+      function renderTable(data, tableBody) {
+        data.forEach(item => {
+          let row = tableBody.insertRow()
+          let cell1 = row.insertCell(0)
+          let cell2 = row.insertCell(1)
+          let cell3 = row.insertCell(2)
+          cell1.innerHTML = item.tytul || 'Brak tytułu'
+          cell2.innerHTML = item.opis || 'Brak opisu'
+          if (item.link && (item.link.startsWith('http://') || item.link.startsWith('https://'))) {
+            cell3.innerHTML = `<a href="${item.link}" target="_blank">Link</a>`
+          } else {
+            cell3.innerHTML = 'Brak linku'
+          }
+        })
+      }
+
+      document.getElementById('scrapeMoviesBtn').addEventListener('click', function () {
+        currentScrapeType = 'filmy'
+        fetchData(currentScrapeType, currentPage) // Użyj bieżącej strony lub domyślnej 1
+      })
+
+      document.getElementById('scrapeSeriesBtn').addEventListener('click', function () {
+        currentScrapeType = 'seriale'
+        fetchData(currentScrapeType, currentPage) // Użyj bieżącej strony lub domyślnej 1
+      })
+
+      document.querySelectorAll('.page-btn').forEach(button => {
+        button.addEventListener('click', function () {
+          currentPage = parseInt(this.dataset.page)
+          // Po kliknięciu numeru strony, automatycznie scrapuj dla aktualnie wybranego typu
+          fetchData(currentScrapeType, currentPage)
+        })
+      })
+
+      // Ładowanie danych filmów ze strony 1 przy pierwszym załadowaniu strony
+      loadInitialData(currentScrapeType, currentPage)
+    </script>
+  </body>
+</html>

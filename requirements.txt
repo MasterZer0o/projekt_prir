@@ -1,0 +1,12 @@
+Flask
+requests
+httpx
+BeautifulSoup4
+# Dodaj inne zależności, jeśli są potrzebne
+lxml
+# Dodaj aiohttp jeśli będziesz go używać w scraperze lub interfejsie
+# aiohttp>=3.7
+# Dodaj requests jeśli interfejs będzie komunikował się z silnikiem przez HTTP
+requests>=2.25
+# Dodaj gunicorn dla produkcyjnego serwera WSGI dla Flaska w Dockerze
+gunicorn>=20.1
